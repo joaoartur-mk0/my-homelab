@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n_docker
+    restart: always
+    environment:
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_PROTOCOL=https 
+      - N8N_RUNNERS_ENABLED=true
+      - NODE_ENV=production
+      #Em caso de uso de webhook internos, coloque o DNS da sua VPN
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - TZ=${GENERIC_TIMEZONE}
+      - N8N_SECURE_COOKIE=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./local-files:/files
+    networks:
+      - ${NETWORK_NAME}
+  n8n-tailscale:
+    image: tailscale/tailscale:latest
+    container_name: n8n-tailscale
+    hostname: n8n-monitor 
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+    volumes:
+      - tailscale-data:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add: 
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+    networks:
+      - ${NETWORK_NAME}
+
+volumes:
+  n8n_data:
+  tailscale-data:
+
+networks:
+  ${NETWORK_NAME}:
+    external: true
