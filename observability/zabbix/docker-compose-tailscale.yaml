@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  postgres-zabbix:
+    image: postgres:15
+    container_name: postgres-zabbix
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=zabbix
+      - POSTGRES_PASSWORD=${ZABBIX_DB_PASSWORD}
+      - POSTGRES_DB=zabbix
+    volumes:
+      - zabbix-db-data:/var/lib/postgresql/data
+    networks:
+      - zabbix-backend
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:ubuntu-latest
+    container_name: zabbix-server
+    restart: unless-stopped
+    environment:
+      - DB_SERVER_HOST=postgres-zabbix
+      - POSTGRES_USER=zabbix
+      - POSTGRES_PASSWORD=${ZABBIX_DB_PASSWORD}
+      - POSTGRES_DB=zabbix
+    networks:
+      - zabbix-backend
+      - minha-rede-personalizada
+    depends_on:
+      - postgres-zabbix
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:ubuntu-latest
+    container_name: zabbix-web
+    restart: unless-stopped
+    environment:
+      - ZBX_SERVER_HOST=zabbix-server
+      - DB_SERVER_HOST=postgres-zabbix
+      - POSTGRES_USER=zabbix
+      - POSTGRES_PASSWORD=${ZABBIX_DB_PASSWORD}
+      - POSTGRES_DB=zabbix
+      - PHP_TZ=America/Sao_Paulo
+    networks:
+      - zabbix-backend
+    depends_on:
+      - postgres-zabbix
+      - zabbix-server
+
+  zabbix-tailscale:
+    image: tailscale/tailscale:latest
+    container_name: zabbix-tailscale
+    hostname: zabbix-monitor 
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+    volumes:
+      - tailscale-data:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add: 
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+    networks:
+      - zabbix-backend
+
+volumes:
+  zabbix-db-data:
+  tailscale-data: 
+
+networks:
+  zabbix-backend:
+    driver: bridge
+  ${NETWORK_NAME}:
+    external: true
