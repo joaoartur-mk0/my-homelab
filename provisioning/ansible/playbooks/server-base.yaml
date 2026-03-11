@@ -1,6 +1,8 @@
+---
 - name: Server initial preparation
-  hosts: "{{ host  }}"
+  hosts: "{{ host }}"
   become: yes
 
   roles:
     - server-base
+    - docker
