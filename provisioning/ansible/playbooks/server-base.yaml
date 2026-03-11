@@ -1,0 +1,6 @@
+- name: Server initial preparation
+  hosts: "{{ host  }}"
+  become: yes
+
+  roles:
+    - server-base
