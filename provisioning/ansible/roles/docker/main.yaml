@@ -1,0 +1,13 @@
+---
+- name: Instalar Docker/DockerCompose
+  apt:
+    name:
+      - docker.io
+      - docker-compose
+    state: present
+
+- name: Ativação e habilitação do docker
+    systemd:
+      name: docker
+      state: started
+      enabled: yes
