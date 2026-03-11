@@ -1,0 +1,31 @@
+- name: Atualizar o cache do APT e fazer upgrade dos pacotes do sistema
+  apt:
+    update_cache: yes
+    upgrade: safe
+    cache_valid_time: 3600 # Evita rodar o apt update de novo se já rodou na última hora
+
+- name: Configurar o fuso horário (Timezone) do servidor
+  timezone:
+    name: America/Sao_Paulo
+
+- name: Instalar pacotes essenciais de rede, administração e utilitários
+  apt:
+    name:
+      - curl
+      - git
+      - ufw
+      - htop
+      - net-tools
+      - software-properties-common
+    state: present
+
+- name: Garantir que o Firewall (UFW) permite conexões SSH
+  ufw:
+    rule: allow
+    name: OpenSSH
+
+- name: Habilitar o UFW por padrão (Default Deny)
+  ufw:
+    state: enabled
+    default: deny
+    direction: incoming
