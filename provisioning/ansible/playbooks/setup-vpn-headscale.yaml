@@ -1,0 +1,6 @@
+- name: Setup VPN
+  hosts: "{{ host  }}"
+  become: yes
+
+  roles:
+    - headscale
