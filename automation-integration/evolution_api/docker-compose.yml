@@ -1,0 +1,85 @@
+version: '3.8'
+services:
+  evolution-tailscale:
+    image: tailscale/tailscale:latest
+    container_name: evolution-tailscale
+    hostname: evolution-api
+    environment:
+      - TS_AUTHKEY=${AUTH_KEY_TAILSCALE}
+      - TS_EXTRA_ARGS=--login-server=${LINK_LOGIN_HEADSCALE}
+      - TS_STATE_DIR=/var/lib/tailscale
+    volumes:
+      - ./tailscale-data:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - private
+      - public
+    restart: unless-stopped
+  evolution_api:
+    container_name: evolution_api_v3
+    image: evoapicloud/evolution-api:v2.3.6
+    restart: always
+    network_mode: "service:evolution-tailscale"
+    deploy:
+      resources:
+        limits:
+          memory: 10G
+    environment:
+      - SERVER_URL=http://evolution-api:8080
+      - AUTHENTICATION_API_KEY=${EVOLUTION_AUTH_KEY}
+      - API_KEY=${EVOLUTION_API_KEY}
+      - NODE_OPTIONS=--max-old-space-size=8192
+      - WA_WEB_VERSION=2.3000.1033805553
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis:6379/0
+      - CACHE_LOCAL_ENABLED=false
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://evolution:evolution@postgres:5432/evolution
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=false
+      - DATABASE_SAVE_MESSAGE_UPDATE=false
+      - DATABASE_SAVE_DATA_CONTACTS=false
+      - DATABASE_SAVE_DATA_CHATS=false
+      - WEBSOCKET_PING_INTERVAL=30000
+      - QRCODE_LIMIT=30
+      - LOG_LEVEL=INFO
+      - DEL_INSTANCE=false
+      - RABBITMQ_ENABLED=false
+      - WEBSOCKET_ENABLED=false
+    depends_on:
+      - redis
+      - postgres
+      - evolution-tailscale
+  redis:
+    image: redis:alpine
+    container_name: evolution_redis
+    command: redis-server --appendonly yes
+    restart: always
+    volumes:
+      - evolution_store:/data
+    networks:
+      - private
+  postgres:
+    image: postgres:15-alpine
+    container_name: evolution_postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=evolution
+      - POSTGRES_PASSWORD=evolution
+      - POSTGRES_DB=evolution
+    volumes:
+      - evolution_pg_data:/var/lib/postgresql/data
+    networks:
+      - private
+volumes:
+  evolution_store:
+  evolution_pg_data:
+networks:
+  public:
+    external: true
+  private:
+    external: true

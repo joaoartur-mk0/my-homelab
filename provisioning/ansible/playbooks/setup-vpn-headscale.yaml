@@ -2,5 +2,9 @@
   hosts: "{{ host  }}"
   become: yes
 
+  vars:
+    vpn_domain: "{{ lookup('env', 'VPN_DOMAIN') | default('vpn.local', true) }}"
+    internal_domain: "{{ lookup('env', 'INTERNAL_DOMAIN') | default('homelab.net', true) }}"
+
   roles:
     - headscale

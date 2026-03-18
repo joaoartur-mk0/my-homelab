@@ -9,27 +9,14 @@
   loop:
     - /opt/headscale
     - /opt/headscale/config
-    - /opt/headscale/data
+    - /opt/headscale/lib
 
 - name: Copiando compose do repositório para OPT
   copy:
     src: "/opt/my-homelab/networking/headscale/docker-compose.yaml"
     dest: /opt/headscale/docker-compose.yaml
 
-- name: Baixar o config.yaml original direto do GitHub do Headscale
-  get_url:
-    url: https://raw.githubusercontent.com/juanfont/headscale/main/config-example.yaml
+- name: Gerar o config.yaml usando o template Jinja2 e variáveis
+  template:
+    src: "/opt/my-homelab/networking/headscale/config.yaml.j2"
     dest: /opt/headscale/config/config.yaml
-    force: no
-
-- name: Ajustar o IP de escuta (listen_addr) no config.yaml para expor para a rede
-  replace:
-    path: /opt/headscale/config/config.yaml
-    regexp: 'listen_addr: 127.0.0.1:8080'
-    replace: 'listen_addr: 0.0.0.0:8080'
-
-- name: Ajustar a URL do Servidor (server_url) com o IP publico da VPS
-  replace:
-    path: /opt/headscale/config/config.yaml
-    regexp: 'server_url: http://127.0.0.1:8080'
-    replace: 'server_url: http://{{ ansible_host }}:8080'
